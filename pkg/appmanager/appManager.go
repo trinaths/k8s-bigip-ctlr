@@ -33,8 +33,10 @@ import (
 
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/kubernetes"
-	v1 "k8s.io/client-go/pkg/api/v1"
-	"k8s.io/client-go/pkg/apis/extensions/v1beta1"
+	//v1 "k8s.io/client-go/pkg/api/v1"
+	v1 "k8s.io/api/core/v1"
+	//"k8s.io/client-go/pkg/apis/extensions/v1beta1"
+	"k8s.io/api/extensions/v1beta1"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
@@ -46,7 +48,10 @@ import (
 	"k8s.io/client-go/util/workqueue"
 
 	"github.com/miekg/dns"
-	routeapi "github.com/openshift/origin/pkg/route/api"
+	// routeapi "github.com/openshift/origin/pkg/route/api"
+	routeapi "github.com/openshift/api/route/v1"
+	// (trinath) Import route client to get RouteClient RouteV1Interface
+	routeclient "github.com/openshift/client-go/route/clientset/versioned/typed/route/v1"
 )
 
 const DefaultConfigMapLabel = "f5type in (virtual-server)"
@@ -78,11 +83,12 @@ type Manager struct {
 	kubeClient        kubernetes.Interface
 	restClientv1      rest.Interface
 	restClientv1beta1 rest.Interface
-	routeClientV1     rest.Interface
-	configWriter      writer.Writer
-	initialState      bool
-	queueLen          int
-	processedItems    int
+	//routeClientV1     rest.Interface
+	routeClientV1  routeclient.RouteV1Interface
+	configWriter   writer.Writer
+	initialState   bool
+	queueLen       int
+	processedItems int
 	// Use internal node IPs
 	useNodeInternal bool
 	// Running in nodeport (or cluster) mode
@@ -166,8 +172,9 @@ type ActiveAS3Route struct {
 
 // Struct to allow NewManager to receive all or only specific parameters.
 type Params struct {
-	KubeClient        kubernetes.Interface
-	RouteClientV1     rest.Interface
+	KubeClient kubernetes.Interface
+	//RouteClientV1     rest.Interface
+	RouteClientV1     routeclient.RouteV1Interface
 	ConfigWriter      writer.Writer
 	UseNodeInternal   bool
 	IsNodePort        bool
@@ -245,11 +252,11 @@ func NewManager(params *Params) *Manager {
 	}
 	if nil != manager.kubeClient && nil == manager.restClientv1 {
 		// This is the normal production case, but need the checks for unit tests.
-		manager.restClientv1 = manager.kubeClient.Core().RESTClient()
+		manager.restClientv1 = manager.kubeClient.CoreV1().RESTClient()
 	}
 	if nil != manager.kubeClient && nil == manager.restClientv1beta1 {
 		// This is the normal production case, but need the checks for unit tests.
-		manager.restClientv1beta1 = manager.kubeClient.Extensions().RESTClient()
+		manager.restClientv1beta1 = manager.kubeClient.ExtensionsV1beta1().RESTClient()
 	}
 	return &manager
 }
@@ -339,12 +346,15 @@ func (appMgr *Manager) AddNamespaceLabelInformer(
 		return fmt.Errorf("Cannot set a namespace label informer when informers " +
 			"have been setup for one or more namespaces.")
 	}
+	optionsModifier := func(options *metav1.ListOptions) {
+			options.LabelSelector = labelSelector.String()
+	}
 	appMgr.nsInformer = cache.NewSharedIndexInformer(
-		newListWatchWithLabelSelector(
+		cache.NewFilteredListWatchFromClient(
 			appMgr.restClientv1,
 			"namespaces",
 			"",
-			labelSelector,
+			optionsModifier,
 		),
 		&v1.Namespace{},
 		resyncPeriod,
@@ -485,26 +495,29 @@ func (appMgr *Manager) newAppInformer(
 	resyncPeriod time.Duration,
 ) *appInformer {
 	log.Debugf("Creating new app informer")
+	everything := func(options *metav1.ListOptions) {
+		options.LabelSelector = ""
+	}
 	appInf := appInformer{
 		namespace: namespace,
 		stopCh:    make(chan struct{}),
 		svcInformer: cache.NewSharedIndexInformer(
-			newListWatchWithLabelSelector(
+			cache.NewFilteredListWatchFromClient(
 				appMgr.restClientv1,
 				"services",
 				namespace,
-				labels.Everything(),
+				everything,
 			),
 			&v1.Service{},
 			resyncPeriod,
 			cache.Indexers{cache.NamespaceIndex: cache.MetaNamespaceIndexFunc},
 		),
 		endptInformer: cache.NewSharedIndexInformer(
-			newListWatchWithLabelSelector(
+			cache.NewFilteredListWatchFromClient(
 				appMgr.restClientv1,
 				"endpoints",
 				namespace,
-				labels.Everything(),
+				everything,
 			),
 			&v1.Endpoints{},
 			resyncPeriod,
@@ -515,11 +528,11 @@ func (appMgr *Manager) newAppInformer(
 	if true == appMgr.manageIngress {
 		log.Infof("Watching Ingress resources.")
 		appInf.ingInformer = cache.NewSharedIndexInformer(
-			newListWatchWithLabelSelector(
+			cache.NewFilteredListWatchFromClient(
 				appMgr.restClientv1beta1,
 				"ingresses",
 				namespace,
-				labels.Everything(),
+				everything,
 			),
 			&v1beta1.Ingress{},
 			resyncPeriod,
@@ -530,13 +543,16 @@ func (appMgr *Manager) newAppInformer(
 	}
 
 	if false != appMgr.manageConfigMaps {
+		cfgMapOptions := func(options *metav1.ListOptions) {
+			options.LabelSelector = cfgMapSelector.String()
+		}
 		log.Infof("Watching ConfigMap resources.")
 		appInf.cfgMapInformer = cache.NewSharedIndexInformer(
-			newListWatchWithLabelSelector(
+			cache.NewFilteredListWatchFromClient(
 				appMgr.restClientv1,
 				"configmaps",
 				namespace,
-				cfgMapSelector,
+				cfgMapOptions,
 			),
 			&v1.ConfigMap{},
 			resyncPeriod,
@@ -550,23 +566,27 @@ func (appMgr *Manager) newAppInformer(
 		// Ensure the default server cert is loaded
 		appMgr.loadDefaultCert()
 
-		var label labels.Selector
-		var err error
-		if len(appMgr.routeConfig.RouteLabel) == 0 {
-			label = labels.Everything()
-		} else {
-			label, err = labels.Parse(appMgr.routeConfig.RouteLabel)
-			if err != nil {
-				log.Errorf("Failed to parse Label Selector string: %v", err)
-			}
-		}
+		//var label labels.Selector
+		//var err error
+		//if len(appMgr.routeConfig.RouteLabel) == 0 {
+		//	label = labels.Everything()
+		//} else {
+		//	label, err = labels.Parse(appMgr.routeConfig.RouteLabel)
+		//	if err != nil {
+		//		log.Errorf("Failed to parse Label Selector string: %v", err)
+		//	}
+		//}
 		appInf.routeInformer = cache.NewSharedIndexInformer(
-			newListWatchWithLabelSelector(
-				appMgr.routeClientV1,
-				"routes",
-				namespace,
-				label,
-			),
+		        &cache.ListWatch{
+			        ListFunc: func(options metav1.ListOptions) (runtime.Object, error) {
+					  options.LabelSelector = appMgr.routeConfig.RouteLabel
+				          return appMgr.routeClientV1.Routes(namespace).List(options)
+			        },
+			        WatchFunc: func(options metav1.ListOptions) (watch.Interface, error) {
+					  options.LabelSelector = appMgr.routeConfig.RouteLabel
+				         return appMgr.routeClientV1.Routes(namespace).Watch(options)
+			       },
+		      },
 			&routeapi.Route{},
 			resyncPeriod,
 			cache.Indexers{cache.NamespaceIndex: cache.MetaNamespaceIndexFunc},
@@ -633,32 +653,33 @@ func (appMgr *Manager) newAppInformer(
 	return &appInf
 }
 
-func newListWatchWithLabelSelector(
-	c cache.Getter,
-	resource string,
-	namespace string,
-	labelSelector labels.Selector,
-) cache.ListerWatcher {
-	listFunc := func(options metav1.ListOptions) (runtime.Object, error) {
-		return c.Get().
-			Namespace(namespace).
-			Resource(resource).
-			VersionedParams(&options, metav1.ParameterCodec).
-			LabelsSelectorParam(labelSelector).
-			Do().
-			Get()
-	}
-	watchFunc := func(options metav1.ListOptions) (watch.Interface, error) {
-		return c.Get().
-			Prefix("watch").
-			Namespace(namespace).
-			Resource(resource).
-			VersionedParams(&options, metav1.ParameterCodec).
-			LabelsSelectorParam(labelSelector).
-			Watch()
-	}
-	return &cache.ListWatch{ListFunc: listFunc, WatchFunc: watchFunc}
-}
+//func newListWatchWithLabelSelector(
+//	c cache.Getter,
+//	resource string,
+//	namespace string,
+//	labelSelector labels.Selector,
+//) cache.ListerWatcher {
+//	labelSelectorOptions := func(o *metav1.ListOptions) {
+//		o.LabelSelector = labelSelector.String()
+//	}
+//	listFunc := func(options metav1.ListOptions) (runtime.Object, error) {
+//		return c.Get().
+//			Namespace(namespace).
+//			Resource(resource).
+//			VersionedParams(&options, metav1.ParameterCodec).
+//			Do().
+//			Get()
+//	}
+//	watchFunc := func(options metav1.ListOptions) (watch.Interface, error) {
+//		return c.Get().
+//			Prefix("watch").
+//			Namespace(namespace).
+//			Resource(resource).
+//			VersionedParams(&options, metav1.ParameterCodec).
+//			Watch()
+//	}
+//	return &cache.ListWatch{ListFunc: listFunc, WatchFunc: watchFunc}
+//}
 
 func (appMgr *Manager) enqueueConfigMap(obj interface{}) {
 	if ok, keys := appMgr.checkValidConfigMap(obj); ok {
@@ -1103,7 +1124,7 @@ func (appMgr *Manager) syncConfigMaps(
 					continue
 				}
 				// Check if profile is contained in a Secret
-				secret, err := appMgr.kubeClient.Core().Secrets(cm.ObjectMeta.Namespace).
+				secret, err := appMgr.kubeClient.CoreV1().Secrets(cm.ObjectMeta.Namespace).
 					Get(profile.Name, metav1.GetOptions{})
 				if err != nil {
 					// No secret, so we assume the profile is a BIG-IP default

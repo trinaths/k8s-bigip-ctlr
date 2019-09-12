@@ -26,10 +26,12 @@ import (
 	log "github.com/F5Networks/k8s-bigip-ctlr/pkg/vlogger"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	v1 "k8s.io/client-go/pkg/api/v1"
-	"k8s.io/client-go/pkg/apis/extensions/v1beta1"
-
-	routeapi "github.com/openshift/origin/pkg/route/api"
+	//v1 "k8s.io/client-go/pkg/api/v1"
+	v1 "k8s.io/api/core/v1"
+	//"k8s.io/client-go/pkg/apis/extensions/v1beta1"
+	"k8s.io/api/extensions/v1beta1"
+        routeapi "github.com/openshift/api/route/v1"
+	// routeapi "github.com/openshift/origin/pkg/route/api"
 )
 
 type secretKey struct {
@@ -659,7 +661,7 @@ func (appMgr *Manager) checkProfile(
 		*referenced = true
 		// May reference a secret that no longer exists
 		if appMgr.useSecrets {
-			_, err := appMgr.kubeClient.Core().
+			_, err := appMgr.kubeClient.CoreV1().
 				Secrets(namespace).
 				Get(testName, metav1.GetOptions{})
 			if nil != err && !strings.ContainsAny(secretName, "/") {
