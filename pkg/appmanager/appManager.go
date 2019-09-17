@@ -208,6 +208,8 @@ type RouteConfig struct {
 	ServerSSL   string
 }
 
+var RoutesProcessed []*routeapi.Route
+
 // Create and return a new app manager that meets the Manager interface
 func NewManager(params *Params) *Manager {
 	vsQueue := workqueue.NewNamedRateLimitingQueue(
@@ -644,7 +646,7 @@ func (appMgr *Manager) newAppInformer(
 			&cache.ResourceEventHandlerFuncs{
 				AddFunc:    func(obj interface{}) { appMgr.enqueueRoute(obj) },
 				UpdateFunc: func(old, cur interface{}) { appMgr.enqueueRoute(cur) },
-				DeleteFunc: func(obj interface{}) { appMgr.enqueueRoute(obj) },
+				DeleteFunc: func(obj interface{}) { appMgr.enqueueRoute(obj)},
 			},
 			resyncPeriod,
 		)
@@ -1386,6 +1388,8 @@ func (appMgr *Manager) syncRoutes(
 	for _, route := range routeByIndex {
 		if route.ObjectMeta.Namespace != sKey.Namespace {
 			continue
+		}else {
+			RoutesProcessed = append(RoutesProcessed, route)
 		}
 
 		//FIXME(kenr): why do we process services that aren't associated

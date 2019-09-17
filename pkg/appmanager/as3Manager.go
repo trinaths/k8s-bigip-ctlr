@@ -35,6 +35,7 @@ import (
 	metaV1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	v1 "k8s.io/api/core/v1"
+	routev1 "github.com/openshift/api/route/v1"
 	//v1 "k8s.io/client-go/pkg/api/v1"
 	"k8s.io/client-go/tools/cache"
 )
@@ -389,6 +390,33 @@ func (appMgr *Manager) buildAS3Declaration(obj as3Object, template as3Template) 
 
 }
 
+// Get the RFC3339Copy of the timestamp for updating the OpenShift Routes
+func getRfc3339Timestamp() metaV1.Time {
+	return metaV1.Now().Rfc3339Copy()
+}
+
+// For any route added, the Ingress is not populated unless it is admitted by a Router.
+// This must be populated by CIS based on BIG-IP response 200 OK. 
+// If BIG-IP response is an error, do care update Ingress. 
+func (appMgr *Manager) admitRoutes() {
+	now := getRfc3339Timestamp()
+	for _, route := range RoutesProcessed {
+		if len(route.Status.Ingress) == 0 {
+			log.Debugf("Admitted Route -  %v",route.ObjectMeta.Name)
+			route.Status.Ingress = append(route.Status.Ingress, routev1.RouteIngress{
+				RouterName:              "F5 BIG-IP",
+				Host:                    route.Spec.Host,
+				Conditions: []routev1.RouteIngressCondition{{
+						Type:   routev1.RouteAdmitted,
+						Status: v1.ConditionTrue,
+						LastTransitionTime: &now,
+					}},
+				})
+			appMgr.routeClientV1.Routes(route.ObjectMeta.Namespace).UpdateStatus(route)
+		}
+	}
+}
+
 // TODO: Refactor
 // Takes AS3 Declaration and post it to BigIP
 func (appMgr *Manager) postAS3Declaration(declaration as3Declaration) {
@@ -399,6 +427,7 @@ func (appMgr *Manager) postAS3Declaration(declaration as3Declaration) {
 		appMgr.activeCfgMap.Data = string(tempAs3ConfigmapDecl)
 		appMgr.as3RouteCfg.Data = tempRouteConfigDecl
 		appMgr.as3RouteCfg.Pending = false
+		appMgr.admitRoutes()
 	} else {
 		appMgr.as3RouteCfg.Pending = true
 	}
@@ -473,8 +502,6 @@ func (as3RestClient *AS3RESTClient) restCallToBigIP(method string, route string,
 		}
 		//traverse all response results
 		results := (response["results"]).([]interface{})
-		log.Debugf("(trinaths) BIGIP Response response: %+v", response["declaration"])
-		log.Debugf("(trinaths) BIGIP Response results: %+v", results)
 		for _, value := range results {
 			v := value.(map[string]interface{})
 			//log result with code, tenant and message
