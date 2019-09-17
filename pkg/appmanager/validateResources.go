@@ -268,6 +268,9 @@ func (appMgr *Manager) checkValidRoute(
 ) (bool, []*serviceQueueKey) {
 	var allKeys []*serviceQueueKey
 	route := obj.(*routeapi.Route)
+	log.Debugf("(trinaths) Inside Route: %v ", route.ObjectMeta)
+	log.Debugf("(trinaths) Inside RouteIngress: %v ", route.Status)
+	log.Debugf("(trinaths) Inside RouteSpec: %v ", route.Spec)
 	namespace := route.ObjectMeta.Namespace
 	_, ok := appMgr.getNamespaceInformer(namespace)
 	if !ok {

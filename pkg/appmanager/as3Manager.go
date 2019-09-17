@@ -473,6 +473,8 @@ func (as3RestClient *AS3RESTClient) restCallToBigIP(method string, route string,
 		}
 		//traverse all response results
 		results := (response["results"]).([]interface{})
+		log.Debugf("(trinaths) BIGIP Response response: %+v", response["declaration"])
+		log.Debugf("(trinaths) BIGIP Response results: %+v", results)
 		for _, value := range results {
 			v := value.(map[string]interface{})
 			//log result with code, tenant and message
