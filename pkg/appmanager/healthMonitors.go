@@ -230,7 +230,7 @@ func (appMgr *Manager) handleMultiServiceHealthMonitors(
 				continue
 			}
 			for _, pol := range cfg.Policies {
-				if pol.Name != cfg.Virtual.Name {
+				if pol.Name != strings.Title(cfg.Virtual.Name) {
 					continue
 				}
 				for _, rule := range pol.Rules {

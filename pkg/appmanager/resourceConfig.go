@@ -1545,7 +1545,7 @@ func (appMgr *Manager) createRSConfigFromIngress(
 			pools,
 			cfg.Virtual.Partition,
 		)
-		plcy = createPolicy(*rules, cfg.Virtual.Name, cfg.Virtual.Partition)
+		plcy = createPolicy(*rules, strings.Title(cfg.Virtual.Name), cfg.Virtual.Partition)
 	} else { // single-service
 		pool := Pool{
 			Name: formatIngressPoolName(
@@ -1567,7 +1567,7 @@ func (appMgr *Manager) createRSConfigFromIngress(
 				appRootRules := processAppRoot("", appRootVal, fmt.Sprintf("/%s/%s", pool.Partition, pool.Name), singleServiceIngressType)
 				rules = &appRootRules
 				if len(appRootRules) == 2 {
-					plcy = createPolicy(appRootRules, cfg.Virtual.Name, cfg.Virtual.Partition)
+					plcy = createPolicy(appRootRules, strings.Title(cfg.Virtual.Name), cfg.Virtual.Partition)
 					appRootRefs[pool.Name] = append(appRootRefs[pool.Name], appRootRules[0].Name)
 					appRootRefs[pool.Name] = append(appRootRefs[pool.Name], appRootRules[1].Name)
 				}

@@ -109,7 +109,7 @@ func (appMgr *Manager) setClientSslProfile(
 				profile,
 				route.Spec.TLS.Certificate,
 				route.Spec.TLS.Key,
-				route.Spec.Host,
+				"",
 				false,
 				"", // peerCertMode
 				"", // caFile

@@ -21,6 +21,7 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	. "github.com/onsi/gomega/gstruct"
+	"strings"
 
 	routeapi "github.com/openshift/api/route/v1"
 	fakeRouteClient "github.com/openshift/client-go/route/clientset/versioned/fake"
@@ -296,7 +297,7 @@ var _ = Describe("Health Monitor Tests", func() {
 			Expect(len(rc.Pools)).To(BeNumerically(">", 0))
 			policyNdx := -1
 			for i, pol := range rc.Policies {
-				if pol.Name == rc.Virtual.Name &&
+				if pol.Name == strings.Title(rc.Virtual.Name) &&
 					pol.Partition == rc.GetPartition() {
 					policyNdx = i
 					break
