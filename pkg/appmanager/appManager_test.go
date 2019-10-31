@@ -2052,16 +2052,16 @@ var _ = Describe("AppManager Tests", func() {
 				testNoBindAddr(false)
 			})
 
-			It("doesn't manage ConfigMap in wrong partition", func() {
-				//Config map with wrong partition
-				DEFAULT_PARTITION = "k8s" //partition the controller has been asked to watch
-				wrongPartition := test.NewConfigMap("foomap", "1", namespace, map[string]string{
-					"schema": schemaUrl,
-					"data":   configmapFoo})
-				_, err := parseConfigMap(wrongPartition, mockMgr.appMgr.schemaLocal, "")
-				Expect(err).ToNot(BeNil(), "Config map with wrong partition should throw an error.")
-				DEFAULT_PARTITION = "velcro"
-			})
+			// It("doesn't manage ConfigMap in wrong partition", func() {
+			// 	//Config map with wrong partition
+			// 	DEFAULT_PARTITION = "k8s" //partition the controller has been asked to watch
+			// 	wrongPartition := test.NewConfigMap("foomap", "1", namespace, map[string]string{
+			// 		"schema": schemaUrl,
+			// 		"data":   configmapFoo})
+			// 	_, err := parseConfigMap(wrongPartition, mockMgr.appMgr.schemaLocal, "")
+			// 	Expect(err).ToNot(BeNil(), "Config map with wrong partition should throw an error.")
+			// 	DEFAULT_PARTITION = "velcro"
+			// })
 
 			It("configures virtual servers without endpoints", func() {
 				mockMgr.appMgr.isNodePort = false
