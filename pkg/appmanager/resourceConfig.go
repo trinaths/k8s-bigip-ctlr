@@ -18,7 +18,6 @@ package appmanager
 
 import (
 	"encoding/json"
-	"errors"
 	"fmt"
 	"net"
 	"net/url"
@@ -1299,10 +1298,10 @@ func parseConfigMap(cm *v1.ConfigMap, schemaDBPath, snatPoolName string) (*Resou
 			}
 
 			//Check if we care about the partition specified in the configmap
-			if cfgMap.VirtualServer.Frontend.Partition != DEFAULT_PARTITION {
-				errStr := fmt.Sprintf("The partition '%s' in the ConfigMap does not match '%s' that the controller watches for", cfgMap.VirtualServer.Frontend.Partition, DEFAULT_PARTITION)
-				return &cfg, errors.New(errStr)
-			}
+			// if cfgMap.VirtualServer.Frontend.Partition != DEFAULT_PARTITION {
+			// 	errStr := fmt.Sprintf("The partition '%s' in the ConfigMap does not match '%s' that the controller watches for", cfgMap.VirtualServer.Frontend.Partition, DEFAULT_PARTITION)
+			// 	return &cfg, errors.New(errStr)
+			// }
 			if result.Valid() {
 				ns := cm.ObjectMeta.Namespace
 				copyConfigMap(formatConfigMapVSName(cm), ns, snatPoolName, &cfg, &cfgMap)
