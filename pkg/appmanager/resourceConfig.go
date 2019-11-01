@@ -65,6 +65,10 @@ const customProfileAll string = "all"
 const customProfileClient string = "clientside"
 const customProfileServer string = "serverside"
 
+// Constants for Resource Types
+const resourceTypeIngress string = "ingress"
+const resourceTypeRoute string = "route"
+
 // Constants for CustomProfile.PeerCertMode
 const peerCertRequired = "require"
 const peerCertIgnored = "ignore"
