@@ -112,11 +112,8 @@ var (
 	sslInsecure        *bool
 	trustedCertsCfgmap *string
 	agent              *string
-<<<<<<< HEAD
 	logAS3Response     *bool
-=======
 	overrideAS3Decl    *string
->>>>>>> e16ddfe... Implemented AS3 override feature in CIS, this feature enables administrators to create a virtual server in a controlled and managed partition manually and add metadata so that f5-cccl will not create a new virtual server.
 
 	vxlanMode        string
 	openshiftSDNName *string
