@@ -846,6 +846,7 @@ func (appMgr *Manager) getUnifiedAS3Declaration(as3CfgmapDecl as3Declaration, ro
 	unifiedDecl, err := json.Marshal(as3Config)
 	if err != nil {
 		log.Debugf("[AS3] Unified declaration: %v\n", err)
+<<<<<<< HEAD
 	}
 
 	// Override AS3 Config if AS3 Override is enabled
@@ -868,6 +869,8 @@ func (appMgr *Manager) getUnifiedAS3Declaration(as3CfgmapDecl as3Declaration, ro
 			}
 			log.Errorf("[AS3] Invalid override cfgMap, AS3 declaration is not overridden !!! ")
 		}
+=======
+>>>>>>> e2f5c31... standardizing as3 logs
 	}
 
 	return as3Declaration(string(unifiedDecl)), true
