@@ -102,6 +102,7 @@ var (
 	vsSnatPoolName    *string
 	useSecrets        *bool
 	schemaLocal       *string
+        filterTenants     *bool
 
 	bigIPURL           *string
 	bigIPUsername      *string
@@ -238,6 +239,8 @@ func _init() {
 		"Optional, enable/disable use of Secrets for Ingress or ConfigMap SSL Profiles.")
 	schemaLocal = kubeFlags.String("schema-db-base-dir", "file:///app/vendor/src/f5/schemas/",
 		"Optional, where the schema db's locally reside")
+        filterTenants = kubeFlags.Bool("filter-tenants", false,
+		"Optional, specify whether or not to use tenant filtering API for AS3 declaration")
 
 	// If the flag is specified with no argument, default to LOOKUP
 	kubeFlags.Lookup("resolve-ingress-names").NoOptDefVal = "LOOKUP"
@@ -662,6 +665,7 @@ func main() {
 		OverrideAS3Decl:    *overrideAS3Decl,
 		Agent:              *agent,
 		LogAS3Response:     *logAS3Response,
+	        FilterTenants:      *filterTenants,
 	}
 
 	// If running with Flannel, create an event channel that the appManager
