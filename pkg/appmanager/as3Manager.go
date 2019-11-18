@@ -478,9 +478,9 @@ func (appMgr *Manager) updateAdmitStatus() {
 func (appMgr *Manager) postAS3Declaration(declaration as3Declaration,
 	tempAs3ConfigmapDecl as3Declaration,
 	tempRouteConfigDecl as3ADC) string {
-	log.Debugf("[as3_log] Processing AS3 POST call with AS3 Manager")
+	log.Debugf("[AS3] Processing AS3 POST call with AS3 Manager")
 	as3RC.baseURL = BigIPURL
-	rsp, ok := as3RC.restCallToBigIP("POST", "/mgmt/shared/appsvcs/declare", declaration, appMgr.sslInsecure)
+	rsp, ok := as3RC.restCallToBigIP("POST", "/mgmt/shared/appsvcs/declare", declaration, appMgr)
 	if ok {
 		appMgr.activeCfgMap.Data = string(tempAs3ConfigmapDecl)
 		appMgr.as3RouteCfg.Data = tempRouteConfigDecl
@@ -580,9 +580,9 @@ func (as3RestClient *AS3RESTClient) restCallToBigIP(method string, route string,
 			log.Debugf("[AS3] Big-IP Response code: %v,Response:%v, Message: %v", v["code"], v["response"], v["message"])
 		}
 	} else {
-		log.Errorf("[AS3_log] Big-IP Responded with error code: %v", resp.StatusCode)
+		log.Errorf("[AS3] Big-IP Responded with error code: %v", resp.StatusCode)
 		if appMgr.logAS3Response {
-			log.Errorf("[AS3_log] Raw response from Big-IP: %v ", response)
+			log.Errorf("[AS3] Raw response from Big-IP: %v ", response)
 		}
 	}
 	return string(body), false
@@ -594,7 +594,7 @@ func (appMgr *Manager) getCertFromConfigMap(cfgmap string) {
 	certificates = ""
 	namespaceCfgmapSlice := strings.Split(cfgmap, "/")
 	if len(namespaceCfgmapSlice) != 2 {
-		log.Debugf("[as3_log] Invalid trusted-certs-cfgmap option provided.")
+		log.Debugf("[AS3] Invalid trusted-certs-cfgmap option provided.")
 	} else {
 		certs := ""
 		cm, err := appMgr.getConfigMapUsingNamespaceAndName(namespaceCfgmapSlice[0], namespaceCfgmapSlice[1])
@@ -846,7 +846,6 @@ func (appMgr *Manager) getUnifiedAS3Declaration(as3CfgmapDecl as3Declaration, ro
 	unifiedDecl, err := json.Marshal(as3Config)
 	if err != nil {
 		log.Debugf("[AS3] Unified declaration: %v\n", err)
-<<<<<<< HEAD
 	}
 
 	// Override AS3 Config if AS3 Override is enabled
@@ -869,8 +868,6 @@ func (appMgr *Manager) getUnifiedAS3Declaration(as3CfgmapDecl as3Declaration, ro
 			}
 			log.Errorf("[AS3] Invalid override cfgMap, AS3 declaration is not overridden !!! ")
 		}
-=======
->>>>>>> e2f5c31... standardizing as3 logs
 	}
 
 	return as3Declaration(string(unifiedDecl)), true
