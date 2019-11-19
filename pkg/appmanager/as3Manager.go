@@ -1268,10 +1268,14 @@ func createServiceDecl(cfg *ResourceConfig, sharedApp as3Application) {
 	numPolicies := len(cfg.Virtual.Policies)
 	switch {
 	case numPolicies == 1:
+		policyName := cfg.Virtual.Policies[0].Name
+		if cfg.MetaData.ResourceType == "ingress" {
+			policyName = strings.Title(cfg.Virtual.Policies[0].Name)
+		}
 		svc.PolicyEndpoint = fmt.Sprintf("/%s/%s/%s",
 			DEFAULT_PARTITION,
 			as3SharedApplication,
-			as3FormatedString(strings.Title(cfg.Virtual.Policies[0].Name)))
+			as3FormatedString(policyName))
 	case numPolicies > 1:
 		var peps []as3ResourcePointer
 		for _, pep := range cfg.Virtual.Policies {

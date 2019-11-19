@@ -18,6 +18,7 @@ package appmanager
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net"
 	"net/url"
@@ -1298,10 +1299,10 @@ func parseConfigMap(cm *v1.ConfigMap, schemaDBPath, snatPoolName string) (*Resou
 			}
 
 			//Check if we care about the partition specified in the configmap
-			// if cfgMap.VirtualServer.Frontend.Partition != DEFAULT_PARTITION {
-			// 	errStr := fmt.Sprintf("The partition '%s' in the ConfigMap does not match '%s' that the controller watches for", cfgMap.VirtualServer.Frontend.Partition, DEFAULT_PARTITION)
-			// 	return &cfg, errors.New(errStr)
-			// }
+			if cfgMap.VirtualServer.Frontend.Partition != DEFAULT_PARTITION {
+				errStr := fmt.Sprintf("The partition '%s' in the ConfigMap does not match '%s' that the controller watches for", cfgMap.VirtualServer.Frontend.Partition, DEFAULT_PARTITION)
+				return &cfg, errors.New(errStr)
+			}
 			if result.Valid() {
 				ns := cm.ObjectMeta.Namespace
 				copyConfigMap(formatConfigMapVSName(cm), ns, snatPoolName, &cfg, &cfgMap)
@@ -1483,7 +1484,7 @@ func (appMgr *Manager) createRSConfigFromIngress(
 		} else {
 			// Ingress IP is not given in either as controller deployment option or in annotation, exit with error log.
 			log.Error("Ingress IP Address is not provided. Unable to process ingress resources. " +
-				"Provide either 'default-ingress-ip' in controller deployment or configure ingress IP address with annotation 'virtual-server.f5.com/ip'.")
+				"Either configure controller with 'default-ingress-ip' or Ingress with annotation 'virtual-server.f5.com/ip'.")
 		}
 	}
 
@@ -2067,11 +2068,6 @@ func (appMgr *Manager) handleRouteRules(
 					appMgr.addInternalDataGroup(abDeploymentDgName, DEFAULT_PARTITION)
 					rc.Virtual.AddIRule(abPathIRuleName)
 				} else {
-					appMgr.addIRule(
-						sslPassthroughIRuleName, DEFAULT_PARTITION, appMgr.sslPassthroughIRule())
-					appMgr.addInternalDataGroup(edgeHostsDgName, DEFAULT_PARTITION)
-					appMgr.addInternalDataGroup(edgeServerSslDgName, DEFAULT_PARTITION)
-					rc.Virtual.AddIRule(passThroughIRuleName)
 					rc.AddRuleToPolicy(policyName, rule)
 					setAnnotationRulesForRoute(policyName, virtualName, poolName, urlRewriteRule, appRootRules, rc, appMgr)
 				}
