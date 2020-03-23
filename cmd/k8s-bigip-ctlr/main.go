@@ -205,8 +205,8 @@ func _init() {
 	trustedCertsCfgmap = bigIPFlags.String("trusted-certs-cfgmap", "",
 		"Optional, when certificates are provided, adds them to controller’s trusted certificate store.")
 	// TODO: Rephrase agent functionality
-	agent = bigIPFlags.String("agent", "cccl",
-		"Optional, when set to as3, orchestration agent will be AS3 instead of CCCL")
+	agent = bigIPFlags.String("agent", "as3",
+		"Optional, when set to CCCL, orchestration agent will be CCCL instead of AS3")
 	overrideAS3UsageStr := "Optional, provide Namespace and Name of that ConfigMap as <namespace>/<configmap-name>." +
 		"The JSON key/values from this ConfigMap will override key/values from internally generated AS3 declaration."
 	overrideAS3Decl = bigIPFlags.String("override-as3-declaration", "", overrideAS3UsageStr)
