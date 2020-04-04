@@ -1354,6 +1354,7 @@ func createRouteRuleAction(rl *Rule, rulesData *as3Rule, resourceType string) {
 func createMonitorDecl(cfg *ResourceConfig, sharedApp as3Application) {
 
 	for _, v := range cfg.Monitors {
+		log.Debugf("[montior] %v", v)
 		monitor := &as3Monitor{}
 		monitor.Class = "Monitor"
 		monitor.Interval = v.Interval
@@ -1363,20 +1364,20 @@ func createMonitorDecl(cfg *ResourceConfig, sharedApp as3Application) {
 		monitor.TargetPort = &val
 		targetAddressStr := ""
 		monitor.TargetAddress = &targetAddressStr
+		monitor.Send = v.Send
+		monitor.Receive = "none"
+		if v.Recv != "" {
+			monitor.Receive = v.Recv
+		}
 		//Monitor type
 		switch v.Type {
 		case "http":
 			adaptiveFalse := false
 			monitor.Adaptive = &adaptiveFalse
 			monitor.Dscp = &val
-			monitor.Receive = "none"
-			if v.Recv != "" {
-				monitor.Receive = v.Recv
-			}
 			monitor.TimeUnitilUp = &val
-			monitor.Send = v.Send
 		case "https":
-			//Todo: For https monitor type
+			//Todo: handle clientTLS
 			adaptiveFalse := false
 			monitor.Adaptive = &adaptiveFalse
 		}
