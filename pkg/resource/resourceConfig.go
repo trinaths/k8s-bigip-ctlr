@@ -781,6 +781,7 @@ func (rs *Resources) PoolCount() int {
 
 // Count of all virtuals currently stored.
 func (rs *Resources) VirtualCount() int {
+	fmt.Printf("trinath > rs ResourceMap: %v", rs.RsMap)
 	return len(rs.RsMap)
 }
 

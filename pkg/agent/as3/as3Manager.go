@@ -206,6 +206,7 @@ func (am *AS3Manager) postAS3Config(tempAS3Config AS3Config) (bool, string) {
 		tenants = getTenants(unifiedDecl)
 	}
 
+	log.Debugf("[AS3] Posting AS3 Declaration: %v", unifiedDecl)
 	return am.PostManager.postConfig(string(unifiedDecl), tenants)
 }
 

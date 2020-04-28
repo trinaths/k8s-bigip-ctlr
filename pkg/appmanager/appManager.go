@@ -1147,6 +1147,34 @@ func prepareIngressSSLContext(appMgr *Manager, ing *v1beta1.Ingress) {
 	}
 }
 
+// Process IngressClass and ManageIngressClassOnly
+//+--------------------------+--------------+------------------------------+
+//| Ingress with annotation  | Class only   |   Behaviour                  |
+//+--------------------------+--------------+------------------------------+
+//|           No             |    false     |   process all ingress        |
+//+--------------------------+--------------+------------------------------+
+//|           Yes            |    true      |   process class only ingress |
+//+--------------------------+--------------+------------------------------+
+//|           Yes            |    false     |   process all ingress        |
+//+--------------------------+--------------+------------------------------+
+//|           No             |    true      |   dont process any ingress   |
+//+--------------------------+--------------+------------------------------+
+func (appMgr *Manager) processIngressClass (ing *v1beta1.Ingress) bool {
+
+	if appMgr.manageIngressClassOnly {
+		// Check for Ingress Annotation
+		if class, ok := ing.ObjectMeta.Annotations[K8sIngressClass]; ok== true {
+			// check whether Ingress annotation matches the Ingres Class of the Controller.
+			if class != appMgr.ingressClass{
+				return false
+			}
+		} else {
+			return false
+		}
+	}
+	return true
+}
+
 func (appMgr *Manager) syncIngresses(
 	stats *vsSyncStats,
 	sKey serviceQueueKey,
@@ -1219,15 +1247,35 @@ func (appMgr *Manager) syncIngresses(
 				// do not care about
 				continue
 			}
-
+			// Handle Ingress health monitors
+			rsName := rsCfg.GetName()
+			// process ingress-class and manage-ingress-class-only
+			//if !appMgr.processIngressClass(ing){
+			//	var pool Pool
+			//	log.Debugf("[AS3] [syncIngresses] Not processing ingress : %v \n", ing.ObjectMeta.Name)
+			//	for _, pl := range rsCfg.Pools {
+			//		if pl.ServiceName == sKey.ServiceName &&
+			//			poolInNamespace(rsCfg, pl.Name, sKey.Namespace) {
+			//			pool = pl
+			//			break
+			//		}
+			//	}
+			//	svcKey := ServiceKey{
+			//		Namespace:   sKey.Namespace,
+			//		ServiceName: pool.ServiceName,
+			//		ServicePort: pool.ServicePort,
+			//	}
+			//	appMgr.resources.DeleteKeyRef(svcKey, rsName)
+			//	stats.vsDeleted += 1
+			//	continue
+			//}
 			// Handle TLS configuration
 			updated := appMgr.handleIngressTls(rsCfg, ing, svcFwdRulesMap)
 			if updated {
 				stats.cpUpdated += 1
 			}
 
-			// Handle Ingress health monitors
-			rsName := rsCfg.GetName()
+
 			hmStr, found := ing.ObjectMeta.Annotations[HealthMonitorAnnotation]
 			if found {
 				var monitors AnnotationHealthMonitors

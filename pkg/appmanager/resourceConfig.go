@@ -39,19 +39,15 @@ func (appMgr *Manager) createRSConfigFromIngress(
 	defaultIP,
 	snatPoolName string,
 ) *ResourceConfig {
-	if class, ok := ing.ObjectMeta.Annotations[K8sIngressClass]; ok == true {
-		if class != appMgr.ingressClass {
-			return nil
-		}
-	} else {
-		// at this point we dont have k8sIngressClass defined in Ingress definition.
-		// So check whether we need to process those ingress or not.
-		if appMgr.manageIngressClassOnly {
-			return nil
-		}
-	}
+
 	var cfg ResourceConfig
 	var balance string
+
+	// process ingress-class and manage-ingress-class-only
+	if !appMgr.processIngressClass(ing){
+		return nil
+	}
+
 	if bal, ok := ing.ObjectMeta.Annotations[F5VsBalanceAnnotation]; ok == true {
 		balance = bal
 	} else {

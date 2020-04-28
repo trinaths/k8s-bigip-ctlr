@@ -89,6 +89,7 @@ var _ = Describe("Resource Config Tests", func() {
 				map[string]string{
 					K8sIngressClass: "notf5",
 				})
+			mockMgr.appMgr.manageIngressClassOnly = true
 			cfg = mockMgr.appMgr.createRSConfigFromIngress(
 				ingress, &Resources{}, namespace, nil, ps, "", "")
 			Expect(cfg).To(BeNil())
@@ -99,6 +100,7 @@ var _ = Describe("Resource Config Tests", func() {
 					F5VsBindAddrAnnotation:  "controller-default",
 					F5VsPartitionAnnotation: "velcro",
 				})
+			mockMgr.appMgr.manageIngressClassOnly = false
 			cfg = mockMgr.appMgr.createRSConfigFromIngress(
 				defaultIng, &Resources{}, namespace, nil, ps, "5.6.7.8", "")
 			Expect(cfg.Virtual.VirtualAddress.BindAddr).To(Equal("5.6.7.8"))

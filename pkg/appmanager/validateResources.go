@@ -141,7 +141,9 @@ func (appMgr *Manager) checkValidIngress(
 		// Not watching this namespace
 		return false, nil
 	}
-
+	if !appMgr.processIngressClass(ing){
+		return false, nil
+	}
 	bindAddr := ""
 	if addr, ok := ing.ObjectMeta.Annotations[F5VsBindAddrAnnotation]; ok {
 		bindAddr = addr
