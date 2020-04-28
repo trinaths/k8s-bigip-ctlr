@@ -48,15 +48,17 @@ const (
 }
 `
 	as3SupportedVersion  = 3.18
+	cisVersion           = "2.0"
 	as3tenant            = "Tenant"
 	as3class             = "class"
 	as3SharedApplication = "Shared"
 	as3application       = "Application"
 	as3shared            = "shared"
 	as3template          = "template"
-	//as3SchemaLatestURL   = "https://raw.githubusercontent.com/F5Networks/f5-appsvcs-extension/master/schema/latest/as3-schema.json"
+	as3SchemaLatestURL   = "https://raw.githubusercontent.com/F5Networks/f5-appsvcs-extension/master/schema/latest/as3-schema.json"
 	as3SchemaFileName = "as3-schema-3.18.0-4-cis.json"
 )
+
 
 // AS3Config consists of all the AS3 related configurations
 type AS3Config struct {
@@ -99,6 +101,8 @@ type AS3Manager struct {
 	DefaultPartition string
 	ReqChan          chan MessageRequest
 	RspChan          chan interface{}
+	k8sVersion       string
+	manageRoutes     bool
 	ResourceRequest
 	ResourceResponse
 }
@@ -124,6 +128,8 @@ type Params struct {
 	AS3PostDelay       int
 	//Log the AS3 response body in Controller logs
 	LogResponse bool
+	K8sVersion       string
+	ManageRoutes     bool
 	RspChan     chan interface{}
 }
 
@@ -138,6 +144,8 @@ func NewAS3Manager(params *Params) *AS3Manager {
 		SchemaLocalPath:           params.SchemaLocal,
 		FilterTenants:             params.FilterTenants,
 		RspChan:                   params.RspChan,
+		k8sVersion:                params.K8sVersion,
+		manageRoutes:              params.ManageRoutes,
 		as3ActiveConfig: AS3Config{
 			configmap:         AS3ConfigMap{cfg: params.UserDefinedAS3Decl},
 			overrideConfigmap: AS3ConfigMap{cfg: params.OverrideAS3Decl},
@@ -158,6 +166,25 @@ func NewAS3Manager(params *Params) *AS3Manager {
 	as3Manager.fetchAS3Schema()
 
 	return &as3Manager
+}
+
+func (am *AS3Manager) GetUserAgentData() string {
+	// Maintain list of OCP release version and their K8S versions.
+	ocpReleaseLookUp := map[string]string{
+		"1.11+" : "3.11",
+		"1.13" : "4.1",
+		"1.14" : "4.2",
+		"1.16" : "4.3",
+	}
+    data := "CIS/v"+cisVersion
+	if am.k8sVersion != "" {
+		if am.manageRoutes {
+			data = fmt.Sprintf("CIS/v%s OCP/v%s", cisVersion, ocpReleaseLookUp[am.k8sVersion])
+		} else {
+			data = fmt.Sprintf("CIS/v%s K8S/v%s", cisVersion, am.k8sVersion)
+		}
+	}
+    return data
 }
 
 func (am *AS3Manager) postAS3Declaration(rsReq ResourceRequest) (bool, string) {
@@ -264,14 +291,14 @@ func (am *AS3Manager) getUnifiedDeclaration(cfg *AS3Config) as3Declaration {
 }
 
 // Function to prepare empty AS3 declaration
-func getEmptyAs3Declaration(partition string) as3Declaration {
+func (am *AS3Manager) getEmptyAs3Declaration(partition string) as3Declaration {
 	var as3Config map[string]interface{}
 	_ = json.Unmarshal([]byte(baseAS3Config), &as3Config)
 	decl := as3Config["declaration"].(map[string]interface{})
 
 	controlObj := make(map[string]interface{})
 	controlObj["class"] = "Controls"
-	controlObj["userAgent"] = "CIS Configured AS3"
+	controlObj["userAgent"] = am.GetUserAgentData()
 	decl["controls"] = controlObj
 	if partition != "" {
 
@@ -284,7 +311,7 @@ func getEmptyAs3Declaration(partition string) as3Declaration {
 // Method to delete any AS3 partition
 func (am *AS3Manager) DeleteAS3Partition(partition string) {
 	tempAS3Config := am.as3ActiveConfig
-	tempAS3Config.configmap.Data = getEmptyAs3Declaration(partition)
+	tempAS3Config.configmap.Data = am.getEmptyAs3Declaration(partition)
 	nilDecl := am.getUnifiedDeclaration(&tempAS3Config)
 	if nilDecl == "" {
 		return

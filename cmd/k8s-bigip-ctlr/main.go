@@ -151,6 +151,7 @@ var (
 	agRspChan          chan interface{}
 	eventChan          chan interface{}
 	configWriter       writer.Writer
+	k8sVersion 		   string
 )
 
 func _init() {
@@ -763,6 +764,14 @@ func main() {
 		os.Exit(1)
 	}
 
+	// Get K8S version
+	serverVersion, serverErr := kubeClient.Discovery().ServerVersion()
+	if serverErr != nil {
+		log.Debugf("[AS3] TEEM unable to get k8s version: %v", serverErr)
+	}else{
+		k8sVersion = fmt.Sprintf("%s.%s", serverVersion.Major, serverVersion.Minor)
+		log.Debugf("[AS3] Kubernetes version: %v", k8sVersion)
+	}
 	// Cleanup other agent partitions
 	err = cleanupOtherAgents(*agent, resource.DEFAULT_PARTITION)
 	if err != nil {
@@ -914,6 +923,8 @@ func getAS3Params() *as3.Params {
 		AS3PostDelay:              *as3PostDelay,
 		LogResponse:               *logAS3Response,
 		RspChan:                   agRspChan,
+		K8sVersion:                k8sVersion,
+		ManageRoutes:              *manageRoutes,
 	}
 }
 

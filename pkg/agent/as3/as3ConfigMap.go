@@ -61,7 +61,7 @@ func (m *AS3Manager) generateUserDefinedAS3Decleration(cm AgentCfgMap) as3Declar
 		}
 
 		if len(newTenants) == 0 {
-			return getEmptyAs3Declaration("")
+			return m.getEmptyAs3Declaration("")
 		}
 	}
 
@@ -184,7 +184,7 @@ func (m *AS3Manager) buildAS3Declaration(obj as3Object, template as3Template, cm
 	declarationObj := (templateJSON["declaration"]).(map[string]interface{})
 	controlObj := make(map[string]interface{})
 	controlObj["class"] = "Controls"
-	controlObj["userAgent"] = "CIS Configured AS3"
+	controlObj["userAgent"] = m.GetUserAgentData()
 	declarationObj["controls"] = controlObj
 
 	// Initialize Pool members

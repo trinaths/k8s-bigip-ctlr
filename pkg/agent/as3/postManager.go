@@ -28,7 +28,6 @@ import (
 	"time"
 
 	log "github.com/F5Networks/k8s-bigip-ctlr/pkg/vlogger"
-	routeclient "github.com/openshift/client-go/route/clientset/versioned/typed/route/v1"
 )
 
 const (
@@ -61,7 +60,6 @@ type PostParams struct {
 	AS3PostDelay  int
 	//Log the AS3 response body in Controller logs
 	LogResponse   bool
-	RouteClientV1 routeclient.RouteV1Interface
 }
 
 type config struct {
