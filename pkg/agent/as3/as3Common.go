@@ -19,6 +19,8 @@ package as3
 import (
 	"fmt"
 	log "github.com/F5Networks/k8s-bigip-ctlr/pkg/vlogger"
+	"sort"
+
 	//a "github.com/F5Networks/k8s-bigip-ctlr/pkg/appmanager"
 	. "github.com/F5Networks/k8s-bigip-ctlr/pkg/resource"
 	"github.com/xeipuuv/gojsonschema"
@@ -104,6 +106,8 @@ func (appMgr *AS3Manager) processDataGroupForAS3(sharedApp as3Application) {
 					}
 					dgMap.Records = append(dgMap.Records, rec)
 				}
+				// sort above create dgMap records.
+				sort.Slice(dgMap.Records, func(i, j int) bool { return (dgMap.Records[i].Key < dgMap.Records[j].Key) })
 				sharedApp[as3FormatedString(dg.Name, "")] = dgMap
 			} else {
 				for _, record := range dg.Records {
@@ -117,6 +121,12 @@ func (appMgr *AS3Manager) processDataGroupForAS3(sharedApp as3Application) {
 					}
 					sharedApp[as3FormatedString(dg.Name, "")].(*as3DataGroup).Records = append(dataGroupRecord.(*as3DataGroup).Records, rec)
 				}
+				// sort above created
+				sort.Slice(sharedApp[as3FormatedString(dg.Name, "")].(*as3DataGroup).Records,
+					func(i, j int) bool {
+						return (sharedApp[as3FormatedString(dg.Name, "")].(*as3DataGroup).Records[i].Key <
+							sharedApp[as3FormatedString(dg.Name, "")].(*as3DataGroup).Records[j].Key)
+					})
 			}
 		}
 	}
