@@ -18,6 +18,7 @@ package as3
 
 import (
 	"fmt"
+	"sort"
 	"strconv"
 	"strings"
 
@@ -119,7 +120,7 @@ func (am *AS3Manager) processDataGroupForAS3(sharedApp as3Application) {
 					}
 					sharedApp[as3FormatedString(dg.Name, "")].(*as3DataGroup).Records = append(dataGroupRecord.(*as3DataGroup).Records, rec)
 				}
-				// sort above created
+				// sort above created records
 				sort.Slice(sharedApp[as3FormatedString(dg.Name, "")].(*as3DataGroup).Records,
 					func(i, j int) bool {
 						return (sharedApp[as3FormatedString(dg.Name, "")].(*as3DataGroup).Records[i].Key <

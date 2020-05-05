@@ -63,7 +63,7 @@ func (am *AS3Manager) generateUserDefinedAS3Decleration(cm AgentCfgMap) as3Decla
 		}
 
 		if len(newTenants) == 0 {
-			return m.getEmptyAs3Declaration("")
+			return am.getEmptyAs3Declaration("")
 		}
 	}
 
@@ -109,7 +109,7 @@ func (c *AS3Config) prepareAS3OverrideDeclaration(data string) {
 }
 
 // Method to perform deletion operation on userdefined-as3-cfgmap
-func (am AS3Manager) prepareDeleteUserDefinedAS3(cm AS3ConfigMap) bool {
+func (am AS3Manager) prepareDeleteUserDefinedAS3(cm AS3ConfigMap) (bool, string) {
 	log.Debugf("[AS3] Deleteing User Defined Configmap: %v", cm.Name)
 	defer cm.Reset()
 	// Fetch all tenants of userdefined-as3-cfgmap
@@ -132,7 +132,7 @@ func (am *AS3Manager) processAS3ConfigMap(cm AgentCfgMap, cfg *AS3Config) {
 	// Perform delete operation for cfgMap
 	if data == "" {
 		// Empty data is treated as delete operation for cfgMaps
-		if !am.processAS3CfgMapDelete(name, namespace, cfg) {
+		if ok, _  := am.processAS3CfgMapDelete(name, namespace, cfg); !ok {
 			log.Errorf("[AS3] Failed to perform delete cfgMap with name: %s and namespace %s",
 				name, namespace)
 		}
@@ -186,7 +186,7 @@ func (am *AS3Manager) buildAS3Declaration(obj as3Object, template as3Template, c
 	// Support `Controls` class for TEEMs in user-defined AS3 configMap.
 	declarationObj := (templateJSON["declaration"]).(map[string]interface{})
 	controlObj := make(as3Control)
-	controlObj.initDefault(m.userAgent)
+	controlObj.initDefault(am.userAgent)
 	declarationObj["controls"] = controlObj
 
 	// Initialize Pool members
@@ -230,14 +230,14 @@ func (am *AS3Manager) buildAS3Declaration(obj as3Object, template as3Template, c
 }
 
 // Method to perform delete operations on AS3 cfgMaps(Override and User-define)
-func (am *AS3Manager) processAS3CfgMapDelete(name, namespace string, cfg *AS3Config) bool {
+func (am *AS3Manager) processAS3CfgMapDelete(name, namespace string, cfg *AS3Config) (bool, string) {
 	// Perform delete operation if override-as3-cfgMap
 	if name == cfg.overrideConfigmap.Name && namespace == cfg.overrideConfigmap.Namespace {
 		log.Debugf("[AS3] Deleting Override Config Map %v", name)
 		cfg.overrideConfigmap.Reset()
 		cfg.overrideConfigmap.Data = ""
 		am.as3ActiveConfig.overrideConfigmap = cfg.overrideConfigmap
-		return true
+		return true, ""
 	}
 
 	// Perform delete operation if userdefined-as3-cfgMap
