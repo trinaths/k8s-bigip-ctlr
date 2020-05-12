@@ -163,7 +163,6 @@ func NewAS3Manager(params *Params) *AS3Manager {
 }
 
 func (am *AS3Manager) postAS3Declaration(rsReq ResourceRequest) (bool, string) {
-
 	am.ResourceRequest = rsReq
 
 	as3Config := am.as3ActiveConfig
